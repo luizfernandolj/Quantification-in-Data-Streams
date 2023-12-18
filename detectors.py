@@ -5,6 +5,7 @@ from skimage.metrics import mean_squared_error, structural_similarity
 from ApplyQtfs import ApplyQtfs
 import pandas as pd
 from IKSSW import IKSSW
+from sklearn.metrics import accuracy_score
 import numpy as np
 from random import seed, shuffle
 from sklearn.ensemble import RandomForestClassifier
@@ -21,7 +22,7 @@ mpl.rcParams['font.size'] = 12  # 10
 mpl.rcParams['savefig.dpi'] = 100  # 72
 mpl.rcParams['figure.subplot.bottom'] = .11  # .125
 
-def IBDD(train_data, test_data, window_length, consecutive_values, model, quantifiers):
+def IBDD(train_data, test_data, window_length, consecutive_values, model):
   files2del = ['w1.jpeg', 'w2.jpeg', 'w1_cv.jpeg', 'w2_cv.jpeg']
 
   train_X = train_data.iloc[:, :-1]
@@ -102,7 +103,7 @@ def IBDD(train_data, test_data, window_length, consecutive_values, model, quanti
   return (drift_points, vet_acc, mean_acc, execution_time)
   
 
-def IKS(train_data, test_data, window_length, ca, model, quantifiers):
+def IKS(train_data, test_data, window_length, ca, model):
 
   train_X = train_data.iloc[:, :-1]
   test_X = test_data.iloc[:, :-1]
@@ -118,31 +119,40 @@ def IKS(train_data, test_data, window_length, ca, model, quantifiers):
 
   recent_data_X = train_X.iloc[-window_length:].copy()
   recent_data_y = train_y.iloc[-window_length:].copy()
-  #trainX = train_X    - for quantification implement
-  #trainy = train_y    v
+  trainX = train_X 
+  trainy = train_y
 
   drift_points = []
-  vet_acc = np.zeros(len(test_y))
+  vet_acc_window = pd.DataFrame()
   print('IKS Running...')
   start = timer()
   for i in range(0, len(test_y)):
     print('Example {}/{} - drifts: {}'.format(i+1, len(test_y), drift_points), end='\r')
-    prediction = model.predict(test_X.iloc[[i]])
-    if prediction == test_y[i]:
-      vet_acc[i] = 1
 
     recent_data_X = pd.concat([recent_data_X, test_X.iloc[[i]]], ignore_index=True).iloc[1:]
     recent_data_y = pd.concat([recent_data_y, test_y.iloc[[i]]], ignore_index=True).iloc[1:]
 
-    #proportion = ApplyQtfs(trainX, trainy, recent_data_X, model, quantifiers)    - for quantification implement
+    prediction = model.predict(recent_data_X)
+    acc = accuracy_score(recent_data_y, prediction)
+
+    proportions = ApplyQtfs(trainX, trainy.values.tolist(), recent_data_X, model, 0.5)
+    proportions = proportions.aplly_qtf()
+    probabilities = model.predict_proba(recent_data_X)[:, 1]
+
+    thresholds = calc_threshold(probabilities, proportions)
+
+    vet_acc_qtf = calc_vet_acc_qtf("IKS", recent_data_y, probabilities, thresholds)
+    vet_acc_qtf["IKS"] = [acc]
+    vet_acc_window = pd.concat([vet_acc_window, vet_acc_qtf], ignore_index=True)
+    print(vet_acc_window)
 
     is_drift = ikssw.Test(ca)
     if is_drift:
       drift_points.append(i)
       ikssw.Update()  
       model.fit(recent_data_X, recent_data_y)
-      #trainX = recent_data_X    - for quantification implement
-      #trainy = recent_data_y    - for quantification implement 
+      trainX = recent_data_X    
+      trainy = recent_data_y    
     
     ikssw.Increment(test_X.iloc[i, :-1].values.tolist())
 
@@ -158,11 +168,11 @@ def IKS(train_data, test_data, window_length, ca, model, quantifiers):
 
   plot_acc(vet_acc, 500, None, '-', 'IKS')
 
-  return (drift_points, vet_acc, mean_acc, execution_time)
+  return (drift_points, mean_acc, execution_time)
 
 
 
-def WRS(train_data, test_data, window_length, threshold, model, quantifiers):
+def WRS(train_data, test_data, window_length, threshold, model):
 
   train_X = train_data.iloc[:,:-1]
   test_X = test_data.iloc[:,:-1]
@@ -221,7 +231,7 @@ def WRS(train_data, test_data, window_length, threshold, model, quantifiers):
   return (drift_points, vet_acc, mean_acc, execution_time)
 
 
-def Adwin(train_data, test_data, window_length, model, quantifiers):
+def Adwin(train_data, test_data, window_length, model):
 
   train_X = train_data.iloc[:, :-1]
   test_X = test_data.iloc[:, :-1]
@@ -304,7 +314,7 @@ def get_imgdistribution(name_file, data):
   return w
 
 
-def baseline_classifier(train_data, test_data, model, quantifiers):
+def baseline_classifier(train_data, test_data, model):
 
   train_X = train_data.iloc[:,:-1]
   test_X = test_data.iloc[:,:-1]
@@ -332,7 +342,7 @@ def baseline_classifier(train_data, test_data, model, quantifiers):
 
 
 
-def topline_classifier(train_data, test_data, window_length, model, quantifiers):
+def topline_classifier(train_data, test_data, window_length, model):
 
   train_X = train_data.iloc[:,:-1]
   test_X = test_data.iloc[:,:-1]
@@ -369,6 +379,40 @@ def topline_classifier(train_data, test_data, window_length, model, quantifiers)
   print('Total time: {} sec'.format(np.round(execution_time,2)))
   plot_acc(vet_acc, 500, '^', '-', 'Topline')	
   return (mean_acc, vet_acc, execution_time)	
+
+
+def calc_threshold(probabilities, prop_classes):
+    # Organiza a lista de probabilidades em ordem crescente
+    ordered_probabilities = sorted(probabilities)
+
+    thresholds = {}
+    
+    # Calcula o threshold para cada classe
+    for cls, prop in prop_classes.items():
+        # Calcula o índice de corte com base na proporção da classe
+        cut = int(len(ordered_probabilities) * prop[0])
+        
+        if cut == len(ordered_probabilities):
+          threshold = ordered_probabilities[-1]
+        else:
+          # Obtém o valor do threshold para a classe atual
+          threshold = ordered_probabilities[cut]
+        # Armazena o threshold no dicionário
+        thresholds[cls] = threshold
+
+    return thresholds
+
+def calc_vet_acc_qtf(name, test, probabilities, thresholds):
+  quantifiers = ['CC', 'ACC', 'MS', 'DyS']
+  vet_accs = {}
+  for qtf in quantifiers:
+    vet_acc = [1 if x >= thresholds[qtf] else 0 for x in probabilities]
+    acc = accuracy_score(test, vet_acc)
+    vet_accs[f"{name}-{qtf}"] = [round(acc, 2)]
+  qtf_acc_table = pd.DataFrame.from_dict(vet_accs)
+  
+  return qtf_acc_table
+  
 
 def plot_acc(vet_acc, window, marker_type, line, method_name):
   vet_len = len(vet_acc)
