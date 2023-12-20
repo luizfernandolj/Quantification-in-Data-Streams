@@ -138,8 +138,9 @@ def IKS(train_data, test_data, window_length, ca, model):
 
     proportions = ApplyQtfs(trainX, trainy.values.tolist(), recent_data_X, model, 0.5)
     proportions = proportions.aplly_qtf()
+    print(proportions)
     
-    print(recent_data_y.value_counts())
+    print(recent_data_y.value_counts(normalize=True))
     vet_acc_qtf = pd.DataFrame()
     
     vet_acc_qtf["IKS"] = [round(acc, 2)]

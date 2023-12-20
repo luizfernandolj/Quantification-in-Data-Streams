@@ -39,7 +39,6 @@ class DyS(Quantifier):
                 return utils.DyS_distance(((p_bin_count * x) + (n_bin_count * (1 - x))), te_bin_count, measure=self.similarity_measure)
 
             result.append(utils.TernarySearch(0, 1, f))
-
         pos_prop = round(float(np.median(result)), 2)
         neg_prop = round(1 - pos_prop, 2)
 

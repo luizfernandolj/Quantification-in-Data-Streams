@@ -101,7 +101,7 @@ def TPRandFPR(validation_scores):
 
         aux = pd.DataFrame([[round(threshold, 2), fpr, tpr]])
         aux.columns = ['threshold', 'fpr', 'tpr']
-        arrayOfTPRandFPRByTr = pd.concat([arrayOfTPRandFPRByTr if not arrayOfTPRandFPRByTr.empty else None, aux])
+        arrayOfTPRandFPRByTr = pd.concat([arrayOfTPRandFPRByTr, aux])
 
     arrayOfTPRandFPRByTr = arrayOfTPRandFPRByTr.reset_index(drop=True)
 
