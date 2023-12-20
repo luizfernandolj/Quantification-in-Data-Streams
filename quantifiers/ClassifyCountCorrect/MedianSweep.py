@@ -79,8 +79,7 @@ class MedianSweep(Quantifier):
 
         # Generating the dataframe with the positive scores and its own class
         pos_val_scores = pd.DataFrame(pos_val_scores, columns=['score'])
-        pos_val_labels = pd.DataFrame()
-        pos_val_labels["class"] = y_val_test
+        pos_val_labels = pd.DataFrame(y_val_test, columns=['class'])
 
         # Needed to reset the index, predict_proba result_table reset the indexes!
         pos_val_labels.reset_index(drop=True, inplace=True)

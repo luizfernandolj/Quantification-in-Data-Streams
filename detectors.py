@@ -1,6 +1,7 @@
 from timeit import default_timer as timer
 import os
 from skimage.io import imread
+import math
 from skimage.metrics import mean_squared_error, structural_similarity
 from ApplyQtfs import ApplyQtfs
 import pandas as pd
@@ -137,12 +138,15 @@ def IKS(train_data, test_data, window_length, ca, model):
 
     proportions = ApplyQtfs(trainX, trainy.values.tolist(), recent_data_X, model, 0.5)
     proportions = proportions.aplly_qtf()
+    
+    print(recent_data_y.value_counts())
+    vet_acc_qtf = pd.DataFrame()
+    
+    vet_acc_qtf["IKS"] = [round(acc, 2)]
     probabilities = model.predict_proba(recent_data_X)[:, 1]
-
-    thresholds = calc_threshold(probabilities, proportions)
-
-    vet_acc_qtf = calc_vet_acc_qtf("IKS", recent_data_y, probabilities, thresholds)
-    vet_acc_qtf["IKS"] = [acc]
+    for qtf, proportion in proportions.items():
+      vet_acc_qtf[f"IKS-{qtf}"] = [round(classifier_accuracy(proportions[qtf][1], probabilities, recent_data_y)[0], 2)]
+      
     vet_acc_window = pd.concat([vet_acc_window, vet_acc_qtf], ignore_index=True)
     print(vet_acc_window)
 
@@ -379,6 +383,60 @@ def topline_classifier(train_data, test_data, window_length, model):
   print('Total time: {} sec'.format(np.round(execution_time,2)))
   plot_acc(vet_acc, 500, '^', '-', 'Topline')	
   return (mean_acc, vet_acc, execution_time)	
+
+
+
+
+
+
+def get_best_threshold(pos_prop, pos_scores, thr=0.5, tolerance=0.01):
+    min = 0.0
+    max = 1.0
+    max_iteration = math.ceil(math.log2(len(pos_scores))) * 2 + 10
+    for _ in range(max_iteration):
+        new_proportion = sum(1 for score in pos_scores if score > thr) / len(pos_scores)
+        if abs(new_proportion - pos_prop) < tolerance:
+            return thr
+
+        elif new_proportion > pos_prop:
+            min = thr
+            thr = (thr + max) / 2
+
+        else:
+            max = thr
+            thr = (thr + min) / 2
+
+    return thr
+
+def classifier_accuracy(pos_proportion, pos_test_scores, labels):
+    sorted_scores = sorted(pos_test_scores)
+
+    threshold = get_best_threshold(pos_proportion, sorted_scores)
+
+    pred_labels = [1 if score >= threshold else 0 for score in pos_test_scores]
+
+    corrects = sum(1 for a, b in zip(pred_labels, labels) if a == b)
+    accuracy = corrects / len(pred_labels)
+
+    return accuracy, threshold
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def calc_threshold(probabilities, prop_classes):

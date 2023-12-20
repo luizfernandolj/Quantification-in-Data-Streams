@@ -21,7 +21,7 @@ mpl.rcParams['font.size'] = 12  # 10
 mpl.rcParams['savefig.dpi'] = 100  # 72
 mpl.rcParams['figure.subplot.bottom'] = .11  # .125
 
-def IBDD(train_data, test_data, window_length, consecutive_values, model, quantifiers):
+def IBDD(train_data, test_data, window_length, consecutive_values, model):
   files2del = ['w1.jpeg', 'w2.jpeg', 'w1_cv.jpeg', 'w2_cv.jpeg']
 
   train_X = train_data.iloc[:, :-1]
@@ -102,7 +102,7 @@ def IBDD(train_data, test_data, window_length, consecutive_values, model, quanti
   return (drift_points, vet_acc, mean_acc, execution_time)
   
 
-def IKS(train_data, test_data, window_length, ca, model, quantifiers):
+def IKS(train_data, test_data, window_length, ca, model):
 
   train_X = train_data.iloc[:, :-1]
   test_X = test_data.iloc[:, :-1]
@@ -162,7 +162,7 @@ def IKS(train_data, test_data, window_length, ca, model, quantifiers):
 
 
 
-def WRS(train_data, test_data, window_length, threshold, model, quantifiers):
+def WRS(train_data, test_data, window_length, threshold, model):
 
   train_X = train_data.iloc[:,:-1]
   test_X = test_data.iloc[:,:-1]
@@ -221,7 +221,7 @@ def WRS(train_data, test_data, window_length, threshold, model, quantifiers):
   return (drift_points, vet_acc, mean_acc, execution_time)
 
 
-def Adwin(train_data, test_data, window_length, model, quantifiers):
+def Adwin(train_data, test_data, window_length, model):
 
   train_X = train_data.iloc[:, :-1]
   test_X = test_data.iloc[:, :-1]
@@ -304,7 +304,7 @@ def get_imgdistribution(name_file, data):
   return w
 
 
-def baseline_classifier(train_data, test_data, model, quantifiers):
+def baseline_classifier(train_data, test_data, model):
 
   train_X = train_data.iloc[:,:-1]
   test_X = test_data.iloc[:,:-1]

@@ -69,12 +69,12 @@ class AdjustedClassifyCount(Quantifier):
 
         # Generating the dataframe with the positive scores and it's own class
         pos_val_scores = pd.DataFrame(pos_val_scores, columns=['score'])
-        pos_val_labels = pd.DataFrame()
-        pos_val_labels["class"] = y_val_test
+        pos_val_labels = pd.DataFrame(y_val_test, columns=['class'])
+
         # Needed to reset the index, predict_proba result_table reset the indexes!
         pos_val_labels.reset_index(drop=True, inplace=True)
 
-        val_scores = pd.concat([pos_val_scores, pos_val_labels], axis=1, ignore_index=False)
+        val_scores = pd.concat([pos_val_scores, pos_val_labels], axis='columns', ignore_index=False)
 
         # Generating the tpr and fpr for thresholds between [0, 1] for the validation scores!
         self.tprfpr = TPRandFPR(val_scores)
