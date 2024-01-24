@@ -65,7 +65,12 @@ class AdjustedClassifyCount(Quantifier):
         self.classifier.fit(X_val_train, y_val_train)
 
         # Validation result_table
-        pos_val_scores = self.classifier.predict_proba(X_val_test)[:, 1]
+        pos_val_scores = self.classifier.predict_proba(X_val_test)
+        
+        if len(pos_val_scores[0]) == 1:
+            pos_val_scores = [1-x for x in pos_val_scores]
+        else:
+            pos_val_scores = pos_val_scores[:, 1]
 
         # Generating the dataframe with the positive scores and it's own class
         pos_val_scores = pd.DataFrame(pos_val_scores, columns=['score'])
@@ -84,7 +89,14 @@ class AdjustedClassifyCount(Quantifier):
 
     def predict(self, X_test):
         # Result from the train
-        scores = self.classifier.predict_proba(X_test)
+        sc = self.classifier.predict_proba(X_test)
+        
+        if len(sc[0]) == 1:
+            scores = []
+            for x in sc:
+                scores.append([round(float(x), 2), round(float(1-x), 2)])
+        else:
+            scores = pos_val_scores[:, 1]
 
         # Class proportion generated through the main algorithm
         return self.get_class_proportion(scores)

@@ -106,10 +106,10 @@ def IBDD(train_data, test_data, window_length, consecutive_values, model):
 
 def IKS(train_data, test_data, window_length, ca, model):
 
-  train_X = train_data.iloc[:, :-1]
-  test_X = test_data.iloc[:, :-1]
-  train_y = train_data.iloc[:, -1]
-  test_y = test_data.iloc[:, -1]
+  train_X = train_data.iloc[:, :-2]
+  test_X = test_data.iloc[:, :-2]
+  train_y = train_data.iloc[:, -2]
+  test_y = test_data.iloc[:, -2]
 
   model.fit(train_X, train_y)
 
@@ -132,6 +132,8 @@ def IKS(train_data, test_data, window_length, ca, model):
 
     recent_data_X = pd.concat([recent_data_X, test_X.iloc[[i]]], ignore_index=True).iloc[1:]
     recent_data_y = pd.concat([recent_data_y, test_y.iloc[[i]]], ignore_index=True).iloc[1:]
+    
+    print(recent_data_y.value_counts())
 
     prediction = model.predict(recent_data_X)
     acc = accuracy_score(recent_data_y, prediction)
@@ -144,20 +146,26 @@ def IKS(train_data, test_data, window_length, ca, model):
     vet_acc_qtf = pd.DataFrame()
     
     vet_acc_qtf["IKS"] = [round(acc, 2)]
-    probabilities = model.predict_proba(recent_data_X)[:, 1]
-    for qtf, proportion in proportions.items():
-      vet_acc_qtf[f"IKS-{qtf}"] = [round(classifier_accuracy(proportions[qtf][1], probabilities, recent_data_y)[0], 2)]
-      
+    
+    probabilities = model.predict_proba(recent_data_X)
+    if len(probabilities[0]) == 1:
+        prob = [float(x) for x in probabilities]
+    else:
+        prob = probabilities[:, 1]
+    
+    for qtf, proportion in proportions.items():      
+        vet_acc_qtf[f"IKS-{qtf}"] = [round(classifier_accuracy(proportions[qtf][1], prob, recent_data_y)[0], 2)]
+        
     vet_acc_window = pd.concat([vet_acc_window, vet_acc_qtf], ignore_index=True)
     print(vet_acc_window)
 
     is_drift = ikssw.Test(ca)
     if is_drift:
-      drift_points.append(i)
-      ikssw.Update()  
-      model.fit(recent_data_X, recent_data_y)
-      trainX = recent_data_X    
-      trainy = recent_data_y    
+        drift_points.append(i)
+        ikssw.Update()  
+        model.fit(recent_data_X, recent_data_y)
+        trainX = recent_data_X    
+        trainy = recent_data_y    
     
     ikssw.Increment(test_X.iloc[i, :-1].values.tolist())
 

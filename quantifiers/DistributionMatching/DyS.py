@@ -59,8 +59,15 @@ class DyS(Quantifier):
         self.classifier.fit(X_train, y_train)
 
     def predict(self, X_test):
-        scores = self.classifier.predict_proba(X_test)
-        scores = [score[1] for score in scores]
+        sc = self.classifier.predict_proba(X_test)
+        
+        if len(sc[0]) == 1:
+            scores = []
+            for x in sc:
+                scores.append(int(1-x))
+        else:
+            scores = pos_val_scores[:, 1]
+            scores = [score[1] for score in scores]
 
         self.test_scores = scores
 

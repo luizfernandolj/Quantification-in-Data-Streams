@@ -109,13 +109,14 @@ class ApplyQtfs:
     proportions = {}
     for qtf in self.quantifiers:
       # .............Calling of Methods.................
-      pred_pos_prop = self.apply_quantifier(quantifier=qtf, clf=self.model,
+        pred_pos_prop = self.apply_quantifier(quantifier=qtf, clf=self.model,
                                             thr=self.thr,
                                             measure='topsoe',
                                             train=[self.trainX, self.trainy],
                                             test=self.window)
-      pred_pos_prop = [round(pred_pos_prop[0], 2), round(pred_pos_prop[1], 2)]# Getting the proportions
-      proportions[qtf] = pred_pos_prop
+        pred_pos_prop = [round(pred_pos_prop[0], 2), round(1 - pred_pos_prop[0], 2)]# Getting the proportions
+        print(pred_pos_prop)
+        proportions[qtf] = pred_pos_prop
     return proportions
       
                            
