@@ -66,8 +66,7 @@ class DyS(Quantifier):
             for x in sc:
                 scores.append(int(1-x))
         else:
-            scores = pos_val_scores[:, 1]
-            scores = [score[1] for score in scores]
+            scores = sc[:, 1]
 
         self.test_scores = scores
 

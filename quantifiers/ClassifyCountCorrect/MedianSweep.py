@@ -34,8 +34,11 @@ class MedianSweep(Quantifier):
             fpr = record['fpr']
 
             batch_size = len(scores)
-
-            pos_scores = [score[1] for score in scores]
+            
+            if isinstance(scores[0], float):
+                pos_scores = scores
+            else:
+                pos_scores = [score[1] for score in scores]
 
             estimated_positive_ratio = len([pos_score for pos_score in pos_scores if pos_score >= threshold])
             estimated_positive_ratio /= batch_size
@@ -106,7 +109,7 @@ class MedianSweep(Quantifier):
             for x in sc:
                 scores.append([round(float(x), 2), round(float(1-x), 2)])
         else:
-            scores = pos_val_scores[:, 1]
+            scores = sc[:, 1]
 
         # Class proportion generated through the main algorithm
         return self.get_class_proportion(scores)

@@ -132,8 +132,6 @@ def IKS(train_data, test_data, window_length, ca, model):
 
     recent_data_X = pd.concat([recent_data_X, test_X.iloc[[i]]], ignore_index=True).iloc[1:]
     recent_data_y = pd.concat([recent_data_y, test_y.iloc[[i]]], ignore_index=True).iloc[1:]
-    
-    print(recent_data_y.value_counts())
 
     prediction = model.predict(recent_data_X)
     acc = accuracy_score(recent_data_y, prediction)

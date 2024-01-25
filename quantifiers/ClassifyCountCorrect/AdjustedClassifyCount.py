@@ -20,16 +20,23 @@ class AdjustedClassifyCount(Quantifier):
 
     def get_class_proportion(self, scores):
         total_instances = len(scores)
-        number_classes = len(scores[0])
+        number_classes = 2 if isinstance(scores[0], float) else len(scores[0])
         result = [0] * number_classes
 
         # Counting positive and negative classes
-        for score in scores:
-            if score[1] >= self.threshold:
-                result[1] += 1
-            else:
-                result[0] += 1
-
+        if type(scores[0]) == float:
+            for score in scores:
+                if score >= self.threshold:
+                    result[1] += 1
+                else:
+                    result[0] += 1
+        else:
+            for score in scores:
+                if score[1] >= self.threshold:
+                    result[1] += 1
+                else:
+                    result[0] += 1
+        
         # Choosing the tpr and fpr based on what was passed in the constructor
         self.tprfpr = self.tprfpr[self.tprfpr['threshold'] == self.threshold]
         diff_tprfpr = self.tprfpr['tpr'] - self.tprfpr['fpr']
@@ -96,7 +103,7 @@ class AdjustedClassifyCount(Quantifier):
             for x in sc:
                 scores.append([round(float(x), 2), round(float(1-x), 2)])
         else:
-            scores = pos_val_scores[:, 1]
+            scores = sc[:, 1].tolist()
 
         # Class proportion generated through the main algorithm
         return self.get_class_proportion(scores)

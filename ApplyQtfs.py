@@ -115,7 +115,6 @@ class ApplyQtfs:
                                             train=[self.trainX, self.trainy],
                                             test=self.window)
         pred_pos_prop = [round(pred_pos_prop[0], 2), round(1 - pred_pos_prop[0], 2)]# Getting the proportions
-        print(pred_pos_prop)
         proportions[qtf] = pred_pos_prop
     return proportions
       
